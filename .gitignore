@@ -1,0 +1,11 @@
+# Never commit dependencies (huge, auto-installed by npm)
+backend/node_modules/
+
+# Never commit secrets
+.env
+*.env
+
+# OS junk
+Thumbs.db
+desktop.ini
+.DS_Store 

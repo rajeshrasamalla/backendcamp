@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BackEndCamp – Interactive Course</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#1b1b32;--sidebar:#0a0a23;--panel:#12122a;--border:#2e2e52;
+  --accent:#f1be32;--blue:#00b4d8;--green:#00ea64;--red:#ff4c4c;
+  --muted:#6868a0;--text:#dde1ff;--editor:#1e1e2e;--code:#cdd6f4
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{background:var(--sidebar);border-bottom:2px solid var(--accent);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;z-index:100}
+.logo{font-size:17px;font-weight:800;color:var(--accent)}.logo span{color:var(--muted);font-size:12px;font-weight:400;margin-left:10px}
+.topbar-right{display:flex;align-items:center;gap:14px}
+.server-status{font-size:11px;padding:4px 10px;border-radius:10px;font-weight:700;cursor:pointer;border:none}
+.status-ok{background:rgba(0,234,100,.15);color:var(--green)}
+.status-err{background:rgba(255,76,76,.15);color:var(--red)}
+.auth-btn{background:var(--accent);color:#0a0a23;border:none;font-size:12px;font-weight:700;padding:6px 14px;border-radius:6px;cursor:pointer}
+.auth-btn.logout{background:rgba(255,76,76,.15);color:var(--red)}
+.progress-wrap{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.pbar{width:120px;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.pbar-fill{height:100%;background:var(--accent);transition:width .4s}
+
+/* LAYOUT */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:260px;background:var(--sidebar);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0}
+.sidebar::-webkit-scrollbar{width:3px}.sidebar::-webkit-scrollbar-thumb{background:var(--border)}
+.sec-title{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);padding:14px 16px 6px;font-weight:700}
+.lesson-row{display:flex;align-items:center;gap:8px;padding:9px 16px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all .15s}
+.lesson-row:hover{background:rgba(255,255,255,.04);color:var(--text)}
+.lesson-row.active{background:rgba(241,190,50,.07);color:var(--accent);border-left-color:var(--accent)}
+.lesson-row.done{color:var(--green)}.lesson-row.done .ldot{background:var(--green)}
+.lesson-row.active .ldot{background:var(--accent)}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0}
+.lnum{font-size:10px;color:var(--muted);min-width:18px}
+
+/* CONTENT */
+.content{display:flex;flex:1;overflow:hidden}
+
+/* INSTRUCTION */
+.instr{width:360px;flex-shrink:0;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;padding:24px 22px}
+.instr::-webkit-scrollbar{width:3px}.instr::-webkit-scrollbar-thumb{background:var(--border)}
+.lesson-badge{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:8px;display:block}
+.lesson-title{font-size:20px;font-weight:800;color:#fff;margin-bottom:12px;line-height:1.25}
+.lesson-body{font-size:13.5px;line-height:1.85;color:#9da8cc;margin-bottom:16px}
+.lesson-body code{background:rgba(0,180,216,.15);color:var(--blue);padding:1px 6px;border-radius:4px;font-family:'Courier New',monospace;font-size:12.5px}
+.lesson-body strong{color:var(--text)}
+.lesson-body ul{padding-left:18px;margin:6px 0}
+.lesson-body li{margin:4px 0}
+.task-box{background:rgba(241,190,50,.05);border:1px solid rgba(241,190,50,.2);border-left:3px solid var(--accent);border-radius:6px;padding:14px 16px;margin:14px 0;font-size:13px;line-height:1.7;color:#bbc0de}
+.task-box strong{color:var(--accent);font-size:11px;letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px}
+.task-box code{background:rgba(0,180,216,.12);color:var(--blue);padding:1px 5px;border-radius:3px;font-family:'Courier New',monospace}
+
+/* API EXPLORER */
+.api-explorer{background:rgba(0,180,216,.04);border:1px solid rgba(0,180,216,.2);border-radius:8px;margin-top:16px;overflow:hidden}
+.api-ex-title{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--blue);padding:10px 14px;border-bottom:1px solid rgba(0,180,216,.15);font-weight:700}
+.api-ex-body{padding:12px 14px}
+.endpoint-row{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px;font-family:'Courier New',monospace;cursor:pointer;padding:5px 8px;border-radius:5px;transition:background .15s}
+.endpoint-row:hover{background:rgba(0,180,216,.08)}
+.method-tag{font-size:10px;font-weight:800;padding:2px 7px;border-radius:4px;min-width:52px;text-align:center}
+.GET{background:rgba(0,234,100,.15);color:var(--green)}
+.POST{background:rgba(0,180,216,.15);color:var(--blue)}
+.PATCH{background:rgba(241,190,50,.15);color:var(--accent)}
+.DELETE{background:rgba(255,76,76,.15);color:var(--red)}
+.ep-path{color:var(--code)}
+.ep-desc{color:var(--muted);font-size:11px;margin-left:auto;font-family:'Segoe UI',sans-serif}
+
+.hint-btn{background:none;border:1px solid var(--border);color:var(--muted);font-size:12px;padding:6px 13px;border-radius:5px;cursor:pointer;margin-top:8px;transition:all .2s}
+.hint-btn:hover{border-color:var(--blue);color:var(--blue)}
+.hint-box{background:rgba(0,180,216,.05);border:1px solid rgba(0,180,216,.18);border-radius:6px;padding:12px 14px;font-size:12.5px;color:var(--blue);margin-top:10px;display:none;line-height:1.75}
+.hint-box code{background:rgba(0,0,0,.3);padding:1px 5px;border-radius:3px;font-family:'Courier New',monospace}
+.hint-box.show{display:block}
+
+/* EDITOR AREA */
+.editor-area{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.editor-tabs{background:var(--editor);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 12px;height:38px;flex-shrink:0;gap:2px}
+.etab{font-size:12px;padding:0 14px;height:38px;display:flex;align-items:center;gap:5px;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s}
+.etab.active{color:var(--text);border-bottom-color:var(--blue)}
+.etab-dot{width:8px;height:8px;border-radius:50%}
+.editor-row{flex:1;display:flex;overflow:hidden}
+
+/* CODE EDITOR */
+.editor-wrap{flex:1;position:relative;display:flex;flex-direction:column;overflow:hidden}
+.line-nums{position:absolute;left:0;top:0;bottom:0;width:42px;background:var(--editor);color:#404060;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;padding:12px 0;text-align:right;padding-right:8px;pointer-events:none;overflow:hidden;z-index:1;border-right:1px solid var(--border)}
+.code-ta{flex:1;background:var(--editor);color:var(--code);border:none;outline:none;font-family:'Courier New',monospace;font-size:13px;line-height:1.6;padding:12px 12px 12px 54px;resize:none;tab-size:2;caret-color:var(--accent);overflow-y:auto}
+.code-ta::-webkit-scrollbar{width:4px}.code-ta::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* OUTPUT */
+.output{width:290px;flex-shrink:0;background:#0d0d1a;border-left:1px solid var(--border);display:flex;flex-direction:column}
+.out-head{background:var(--editor);border-bottom:1px solid var(--border);padding:0 14px;height:38px;display:flex;align-items:center;justify-content:space-between;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);flex-shrink:0}
+.out-body{flex:1;overflow-y:auto;padding:12px 14px;font-family:'Courier New',monospace;font-size:12px;line-height:1.85}
+.out-body::-webkit-scrollbar{width:3px}.out-body::-webkit-scrollbar-thumb{background:var(--border)}
+.ol{margin:1px 0}.ol.pass{color:var(--green)}.ol.fail{color:var(--red)}.ol.info{color:var(--blue)}.ol.warn{color:var(--accent)}.ol.log{color:#666688}.ol.res{color:var(--code)}
+
+/* RUN BAR */
+.run-bar{background:var(--sidebar);border-top:1px solid var(--border);padding:9px 14px;display:flex;align-items:center;gap:9px;flex-shrink:0}
+.btn-run{background:var(--accent);color:#0a0a23;border:none;font-size:13px;font-weight:800;padding:9px 22px;border-radius:6px;cursor:pointer;transition:all .15s}
+.btn-run:hover{background:#ffd24d;transform:translateY(-1px)}
+.btn-reset{background:none;border:1px solid var(--border);color:var(--muted);font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;transition:all .15s}
+.btn-reset:hover{border-color:var(--muted);color:var(--text)}
+.btn-api{background:rgba(0,180,216,.15);border:1px solid rgba(0,180,216,.3);color:var(--blue);font-size:12px;padding:8px 14px;border-radius:6px;cursor:pointer;font-weight:700;transition:all .15s}
+.btn-api:hover{background:rgba(0,180,216,.25)}
+.sbadge{font-size:12px;padding:5px 11px;border-radius:11px;font-weight:700;display:none}
+.sbadge.pass{display:inline;background:rgba(0,234,100,.12);color:var(--green)}
+.sbadge.fail{display:inline;background:rgba(255,76,76,.12);color:var(--red)}
+.btn-next{margin-left:auto;background:var(--green);color:#0a0a23;border:none;font-size:13px;font-weight:800;padding:9px 22px;border-radius:6px;cursor:pointer;display:none;transition:all .15s}
+.btn-next.show{display:block}
+.btn-next:hover{filter:brightness(1.1)}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center}
+.modal-bg.show{display:flex}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:32px;width:380px;max-width:95vw}
+.modal h3{font-size:20px;font-weight:800;margin-bottom:6px}
+.modal p{color:var(--muted);font-size:13px;margin-bottom:20px}
+.modal input{width:100%;background:var(--editor);border:1px solid var(--border);color:var(--text);font-size:14px;padding:10px 14px;border-radius:8px;outline:none;margin-bottom:10px;font-family:inherit}
+.modal input:focus{border-color:var(--accent)}
+.modal-btns{display:flex;gap:10px;margin-top:4px}
+.mbtn{flex:1;padding:10px;border-radius:7px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}
+.mbtn.primary{background:var(--accent);color:#0a0a23}.mbtn.secondary{background:var(--border);color:var(--text)}
+.mbtn:hover{filter:brightness(1.1)}
+.modal-err{color:var(--red);font-size:12px;margin-top:6px;display:none}
+.modal-err.show{display:block}
+</style>
+</head>
+<body>
+
+<!-- AUTH MODAL -->
+<div class="modal-bg" id="authModal">
+  <div class="modal">
+    <h3 id="modalTitle">Login</h3>
+    <p id="modalSub">Sign in to save your progress across sessions</p>
+    <input id="authName" placeholder="Your name" style="display:none">
+    <input id="authEmail" placeholder="Email address" type="email">
+    <input id="authPass" placeholder="Password (min 6 chars)" type="password">
+    <div class="modal-err" id="authErr"></div>
+    <div class="modal-btns">
+      <button class="mbtn primary" onclick="submitAuth()">Login</button>
+      <button class="mbtn secondary" onclick="toggleAuthMode()">Register instead</button>
+    </div>
+    <button onclick="closeModal()" style="background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-top:14px;width:100%;text-align:center">Continue without account</button>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="logo">&lt;/&gt; BackEndCamp <span>Back-End Development &amp; APIs</span></div>
+  <div class="topbar-right">
+    <button class="server-status status-err" id="serverStatus" onclick="checkHealth()">⬤ Checking server...</button>
+    <div class="progress-wrap">
+      <span id="progText">0/12</span>
+      <div class="pbar"><div class="pbar-fill" id="progFill" style="width:0%"></div></div>
+    </div>
+    <button class="auth-btn" id="authToggle" onclick="openModal()">Login / Register</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="content">
+    <div class="instr" id="instrPanel"></div>
+    <div class="editor-area">
+      <div class="editor-tabs">
+        <div class="etab active"><div class="etab-dot" style="background:#f7768e"></div>server.js</div>
+      </div>
+      <div class="editor-row">
+        <div class="editor-wrap">
+          <div class="line-nums" id="lineNums">1</div>
+          <textarea class="code-ta" id="codeTA" spellcheck="false" autocomplete="off"></textarea>
+        </div>
+        <div class="output">
+          <div class="out-head">
+            <span>Output / Tests</span>
+            <span id="testCount" style="color:var(--muted)"></span>
+          </div>
+          <div class="out-body" id="outBody"><div class="ol info">// Run tests to check your code</div></div>
+        </div>
+      </div>
+      <div class="run-bar">
+        <button class="btn-run" onclick="runCode()">▶ Run Tests</button>
+        <button class="btn-reset" onclick="resetCode()">↺ Reset</button>
+        <button class="btn-api" onclick="openApiExplorer()">⚡ Try Live API</button>
+        <span class="sbadge" id="sBadge"></span>
+        <button class="btn-next show" id="btnNext" onclick="nextLesson()" style="display:none">Next →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api';   // proxied through nginx to Express on :4000
+let token = localStorage.getItem('bec_token') || null;
+let currentUser = null;
+let currentLesson = 0;
+const completed = new Set(JSON.parse(localStorage.getItem('bec_done') || '[]'));
+
+// ── LESSONS ─────────────────────────────────────────────────────────────────
+const lessons = [
+{
+  title:"What is Node.js?", section:"Node.js Basics", num:1,
+  body:`<strong>Node.js</strong> is a JavaScript runtime that runs <em>outside the browser</em>, on servers and your computer. It's what makes JavaScript a full-stack language.
+<ul>
+<li><strong>Asynchronous & non-blocking</strong> — handles thousands of requests efficiently</li>
+<li><strong>Event-driven</strong> — responds to events like HTTP requests, file reads</li>
+<li><strong>npm ecosystem</strong> — millions of packages (Express, bcrypt, jwt…)</li>
+</ul>
+In this course, the real Express server is <strong>running in Docker right now</strong>. You're actually calling it!`,
+  task:`Declare <code>const message = "Hello from Node.js!"</code> and <code>console.log(message)</code>.`,
+  hint:`<code>const message = "Hello from Node.js!";<br>console.log(message);</code>`,
+  starter:`// Welcome! A real Node.js + Express server is running in Docker.
+// TASK: Declare 'message' and log it
+
+`,
+  endpoints:[
+    {m:'GET',p:'/health',d:'Server health check',auth:false},
+  ],
+  test(code){
+    const logs=[];
+    try{
+      const fn=new Function('console',code);
+      fn({log:(...a)=>logs.push(a.join(' '))});
+      return{results:[
+        {pass:/const\s+message\s*=|let\s+message\s*=/.test(code), msg:'Declared variable `message`'},
+        {pass:/console\.log/.test(code), msg:'Used console.log()'},
+        {pass:logs.some(l=>l.includes('Hello from Node.js!')), msg:'Logged "Hello from Node.js!"'},
+      ],logs}
+    }catch(e){return{results:[{pass:false,msg:'JS Error: '+e.message}],logs}}
+  }
+},
+{
+  title:"Objects & JSON", section:"Node.js Basics", num:2,
+  body:`<strong>JSON</strong> (JavaScript Object Notation) is the universal format for APIs. Every API response you've ever seen is JSON.
+
+A JavaScript object <em>becomes</em> JSON when you call <code>JSON.stringify()</code>, and comes back with <code>JSON.parse()</code>.
+
+The real API returns objects like:<br><code>{ id: 1, name: "Alice", email: "alice@example.com" }</code>`,
+  task:`Create <code>const user = { name: "...", email: "...", age: 25 }</code> then log <code>JSON.stringify(user, null, 2)</code> to see pretty-printed JSON.`,
+  hint:`<code>const user = { name: "Alice", email: "alice@test.com", age: 25 };<br>console.log(JSON.stringify(user, null, 2));</code>`,
+  starter:`// JSON is how APIs communicate data
+// TASK: Create user object and pretty-print it as JSON
+
+`,
+  endpoints:[{m:'GET',p:'/api/posts',d:'Returns JSON array of posts',auth:false}],
+  test(code){
+    const logs=[];
+    try{
+      const fn=new Function('console',code+'\nreturn typeof user!=="undefined"?user:undefined;');
+      const u=fn({log:(...a)=>logs.push(a.join(' '))});
+      return{results:[
+        {pass:!!u&&typeof u==='object',msg:'Declared object `user`'},
+        {pass:!!u&&'name' in u,msg:'user has a `name` property'},
+        {pass:!!u&&'email' in u,msg:'user has an `email` property'},
+        {pass:logs.some(l=>l.includes('{')),msg:'Logged JSON with console.log()'},
+        {pass:logs.some(l=>l.includes('"name"')),msg:'JSON.stringify() used (output has quoted keys)'},
+      ],logs}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs}}
+  }
+},
+{
+  title:"HTTP Methods", section:"HTTP & Express", num:3,
+  body:`Every request to a server has a <strong>method</strong> that says what to do:
+<ul>
+<li><strong>GET</strong> — Read data. Safe, no side effects.</li>
+<li><strong>POST</strong> — Create a new resource. Body contains data.</li>
+<li><strong>PATCH</strong> — Partially update an existing resource.</li>
+<li><strong>DELETE</strong> — Remove a resource.</li>
+</ul>
+Try clicking the endpoints on the right to call the <strong>real running API</strong>!`,
+  task:`Create an array <code>const methods = ["GET","POST","PATCH","DELETE"]</code> and use <code>methods.forEach()</code> to log each one with its purpose.`,
+  hint:`<code>const methods = ["GET","POST","PATCH","DELETE"];<br>methods.forEach(m => console.log(m + " - reads/creates/updates/deletes"));</code>`,
+  starter:`// HTTP methods tell the server what action to perform
+// TASK: Create methods array and log each with its purpose
+
+`,
+  endpoints:[
+    {m:'GET',p:'/api/posts',d:'List posts',auth:false},
+    {m:'POST',p:'/api/posts',d:'Create a post (auth required)',auth:true},
+    {m:'GET',p:'/api/posts/1',d:'Get post by ID',auth:false},
+  ],
+  test(code){
+    const logs=[];
+    try{
+      const fn=new Function('console',code+'\nreturn typeof methods!=="undefined"?methods:undefined;');
+      const m=fn({log:(...a)=>logs.push(a.join(' '))});
+      return{results:[
+        {pass:Array.isArray(m),msg:'Declared array `methods`'},
+        {pass:Array.isArray(m)&&m.includes('GET'),msg:'Array contains "GET"'},
+        {pass:Array.isArray(m)&&m.includes('POST'),msg:'Array contains "POST"'},
+        {pass:Array.isArray(m)&&m.includes('DELETE'),msg:'Array contains "DELETE"'},
+        {pass:logs.length>=4,msg:'Logged at least 4 lines (one per method)'},
+      ],logs}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs}}
+  }
+},
+{
+  title:"Your First Express Route", section:"HTTP & Express", num:4,
+  body:`An Express route has three parts:
+<ul>
+<li><strong>Method</strong>: <code>app.get()</code>, <code>app.post()</code>…</li>
+<li><strong>Path</strong>: <code>'/api/users'</code></li>
+<li><strong>Handler</strong>: <code>(req, res) => { res.json({...}) }</code></li>
+</ul>
+The handler receives the full request (<code>req</code>) and lets you build the response (<code>res</code>).
+<br><br>The real server running in Docker uses exactly this pattern!`,
+  task:`Simulate an Express app. Create <code>app</code> with a <code>get(path, handler)</code> method. Register <code>/api/hello</code> to return <code>{ message: "Hello World", timestamp: new Date().toISOString() }</code>. Then invoke the handler manually.`,
+  hint:`<code>const app = { routes:{}, get(path,h){this.routes[path]=h;} };<br>const req={}; const res={json:d=>console.log(JSON.stringify(d,null,2))};<br>app.get('/api/hello',(req,res)=>{ res.json({message:"Hello World", timestamp:new Date().toISOString()}) });<br>app.routes['/api/hello'](req,res);</code>`,
+  starter:`// In Express: app.get('/path', (req, res) => { res.json({...}) })
+// TASK: Simulate an Express app and register GET /api/hello
+
+`,
+  endpoints:[{m:'GET',p:'/health',d:'Real health endpoint',auth:false}],
+  test(code){
+    const logs=[];
+    try{
+      const fn=new Function('console',code);
+      fn({log:(...a)=>logs.push(a.join(' '))});
+      return{results:[
+        {pass:/app\.get\s*\(/.test(code),msg:'Called app.get()'},
+        {pass:/api\/hello/.test(code)||/hello/.test(code),msg:'Route path is /api/hello'},
+        {pass:/res\.json/.test(code)||/res\.send/.test(code),msg:'Handler calls res.json()'},
+        {pass:logs.some(l=>l.includes('Hello World')),msg:'Response contains "Hello World"'},
+        {pass:logs.some(l=>l.includes('timestamp')||l.includes('time')),msg:'Response includes a timestamp'},
+      ],logs}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs}}
+  }
+},
+{
+  title:"Route Parameters", section:"HTTP & Express", num:5,
+  body:`Route parameters capture values from the URL:
+<code>app.get('/users/:id', (req, res) => {</code>
+<code>&nbsp;&nbsp;const id = req.params.id;</code>
+<code>});</code>
+
+Query strings are separate: <code>/posts?page=2&limit=5</code> → <code>req.query.page === "2"</code>
+
+The real API uses <code>/api/posts/1</code>, <code>/api/users/2</code> etc. Try them in the API explorer!`,
+  task:`Write a <code>getPostById(req, res)</code> handler. Read <code>req.params.id</code>. Find the post from the <code>posts</code> array. Return the post or <code>{ error: "Not found" }</code> with status 404. Test with id <code>"2"</code>.`,
+  hint:`<code>function getPostById(req, res) {<br>&nbsp;&nbsp;const post = posts.find(p => p.id === +req.params.id);<br>&nbsp;&nbsp;if (!post) return res.status(404).json({ error: "Not found" });<br>&nbsp;&nbsp;res.json(post);<br>}<br>getPostById({params:{id:"2"}},{json:d=>console.log(JSON.stringify(d,null,2)),status(c){return this;}});</code>`,
+  starter:`// Route params: /posts/:id → req.params.id
+// TASK: Write getPostById and test it
+
+const posts = [
+  { id: 1, title: "Intro to Node.js",   author: "Alice" },
+  { id: 2, title: "REST API Design",    author: "Bob"   },
+  { id: 3, title: "Docker Basics",      author: "Carol" }
+];
+
+`,
+  endpoints:[
+    {m:'GET',p:'/api/posts/1',d:'Get post #1',auth:false},
+    {m:'GET',p:'/api/posts/2',d:'Get post #2',auth:false},
+    {m:'GET',p:'/api/posts/999',d:'Try a missing post (404)',auth:false},
+  ],
+  test(code){
+    try{
+      const fn=new Function('console',code+'\nreturn typeof getPostById!=="undefined"?getPostById:null;');
+      const h=fn({log:()=>{}});
+      const out=[];let st=200;
+      if(typeof h==='function'){h({params:{id:'2'}},{json:d=>out.push(d),status(c){st=c;return this;}})}
+      const out2=[];let st2=200;
+      if(typeof h==='function'){h({params:{id:'99'}},{json:d=>out2.push(d),status(c){st2=c;return this;}})}
+      return{results:[
+        {pass:typeof h==='function',msg:'Function `getPostById` is defined'},
+        {pass:out[0]&&out[0].title==='REST API Design',msg:'Returns correct post for id=2'},
+        {pass:out2[0]&&out2[0].error,msg:'Returns { error: "..." } for missing id'},
+        {pass:st2===404,msg:'Returns status 404 for missing post'},
+      ],logs:[]}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs:[]}}
+  }
+},
+{
+  title:"GET – Read Resources", section:"REST API Design", num:6,
+  body:`GET endpoints return data. They should <strong>never modify</strong> anything.
+
+Good REST responses include metadata:
+<code>{ data: [...], total: 42, page: 1, limit: 10 }</code>
+
+The real <code>GET /api/posts</code> endpoint supports <strong>pagination</strong>:
+<code>/api/posts?page=1&limit=5</code>
+
+It also uses <strong>Redis caching</strong> — first request hits the DB, subsequent ones are served from cache (you'll see <code>"source": "cache"</code>).`,
+  task:`Write <code>getAllPosts(req, res)</code>. Get <code>page</code> from <code>req.query.page</code> (default 1) and <code>limit</code> from <code>req.query.limit</code> (default 2). Slice the <code>posts</code> array and respond with <code>{ data, total, page, limit }</code>.`,
+  hint:`<code>function getAllPosts(req, res) {<br>&nbsp;&nbsp;const page = +(req.query.page||1);<br>&nbsp;&nbsp;const limit = +(req.query.limit||2);<br>&nbsp;&nbsp;const data = posts.slice((page-1)*limit, page*limit);<br>&nbsp;&nbsp;res.json({ data, total: posts.length, page, limit });<br>}<br>getAllPosts({query:{page:'1',limit:'2'}},{json:d=>console.log(JSON.stringify(d,null,2))});</code>`,
+  starter:`// GET with pagination — a real-world API pattern
+// TASK: Write getAllPosts with page/limit query params
+
+const posts = [
+  { id:1, title:"Node.js Basics" },
+  { id:2, title:"REST APIs" },
+  { id:3, title:"Databases" },
+  { id:4, title:"Auth with JWT" },
+  { id:5, title:"Docker" },
+];
+
+`,
+  endpoints:[
+    {m:'GET',p:'/api/posts',d:'List posts (page 1)',auth:false},
+    {m:'GET',p:'/api/posts?page=1&limit=2',d:'With pagination',auth:false},
+  ],
+  test(code){
+    try{
+      const fn=new Function('console',code+'\nreturn typeof getAllPosts!=="undefined"?getAllPosts:null;');
+      const h=fn({log:()=>{}});
+      const out=[];
+      if(typeof h==='function')h({query:{page:'1',limit:'2'}},{json:d=>out.push(d)});
+      const out2=[];
+      if(typeof h==='function')h({query:{}},{json:d=>out2.push(d)});
+      return{results:[
+        {pass:typeof h==='function',msg:'Function `getAllPosts` is defined'},
+        {pass:out[0]&&Array.isArray(out[0].data),msg:'Response has `data` array'},
+        {pass:out[0]&&out[0].total===5,msg:'`total` reflects all posts (5)'},
+        {pass:out[0]&&out[0].data.length===2,msg:'With limit=2, returns 2 posts'},
+        {pass:out2[0]&&out2[0].data.length<=5,msg:'Works with default params (no query)'},
+      ],logs:[]}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs:[]}}
+  }
+},
+{
+  title:"POST – Create Resources", section:"REST API Design", num:7,
+  body:`POST reads data from <code>req.body</code> and creates a resource.
+<strong>Always validate input</strong> — never trust the client:
+<ul>
+<li>Check required fields exist</li>
+<li>Check length/format constraints</li>
+<li>Return <code>400</code> with a clear error message if invalid</li>
+</ul>
+On success, return the created resource with status <code>201 Created</code>.
+
+The real <code>POST /api/posts</code> requires a JWT token. Login first to get one!`,
+  task:`Write <code>createPost(req, res)</code>. Validate <code>title</code> (required, min 3 chars) and <code>body</code> (required). If invalid → status 400 + error. If valid → push new post (with <code>id: posts.length + 1</code>) and return it with status 201.`,
+  hint:`<code>function createPost(req, res) {<br>&nbsp;&nbsp;const {title,body} = req.body;<br>&nbsp;&nbsp;if (!title||!body) return res.status(400).json({error:"title and body required"});<br>&nbsp;&nbsp;if (title.length<3) return res.status(422).json({error:"title too short"});<br>&nbsp;&nbsp;const post={id:posts.length+1,title,body};<br>&nbsp;&nbsp;posts.push(post);<br>&nbsp;&nbsp;res.status(201).json(post);<br>}</code>`,
+  starter:`// POST validates req.body and creates a resource
+// TASK: Write createPost with validation — 400 on fail, 201 on success
+
+let posts = [];
+
+`,
+  endpoints:[
+    {m:'POST',p:'/api/auth/login',d:'Login to get a token',auth:false},
+    {m:'POST',p:'/api/posts',d:'Create post (needs token)',auth:true},
+  ],
+  test(code){
+    try{
+      const fn=new Function('console',code+'\nreturn typeof createPost!=="undefined"?createPost:null;');
+      const h=fn({log:()=>{}});
+      const ok=[];let stOk=0;
+      if(h)h({body:{title:'Hello World',body:'Some content'}},{status(c){stOk=c;return this;},json:d=>ok.push(d)});
+      const bad=[];let stBad=0;
+      if(h)h({body:{title:'Hi'}},{status(c){stBad=c;return this;},json:d=>bad.push(d)});
+      const short=[];let stShort=0;
+      if(h)h({body:{title:'ab',body:'content'}},{status(c){stShort=c;return this;},json:d=>short.push(d)});
+      return{results:[
+        {pass:typeof h==='function',msg:'Function `createPost` is defined'},
+        {pass:ok[0]&&ok[0].title==='Hello World',msg:'Returns new post with title on success'},
+        {pass:stOk===201,msg:'Returns status 201 on success'},
+        {pass:stBad===400,msg:'Returns 400 when body is missing'},
+        {pass:bad[0]&&bad[0].error,msg:'Returns { error: "..." } on validation fail'},
+        {pass:stShort>=400&&stShort<500,msg:'Returns 4xx when title is too short'},
+      ],logs:[]}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs:[]}}
+  }
+},
+{
+  title:"DELETE a Resource", section:"REST API Design", num:8,
+  body:`DELETE removes a resource by ID. Proper flow:
+<ol style="padding-left:16px;margin:8px 0">
+<li>Get <code>id</code> from <code>req.params.id</code></li>
+<li>Check the resource exists → 404 if not</li>
+<li>Check the user owns it → 403 if not authorized</li>
+<li>Delete it, return <code>204 No Content</code></li>
+</ol>
+The real API checks <strong>ownership</strong> — you can only delete your own posts (unless admin).`,
+  task:`Write <code>deletePost(req, res)</code>. Get the id. If not found → 404. If <code>req.user.id !== post.userId</code> → 403. Otherwise delete from array → 204.`,
+  hint:`<code>function deletePost(req,res){<br>&nbsp;&nbsp;const id=+req.params.id;<br>&nbsp;&nbsp;const idx=posts.findIndex(p=>p.id===id);<br>&nbsp;&nbsp;if(idx===-1) return res.status(404).json({error:"Not found"});<br>&nbsp;&nbsp;if(posts[idx].userId!==req.user.id) return res.status(403).json({error:"Forbidden"});<br>&nbsp;&nbsp;posts.splice(idx,1);<br>&nbsp;&nbsp;res.status(204).send();<br>}</code>`,
+  starter:`// DELETE: check exists, check ownership, then remove
+// TASK: Write deletePost with proper 404, 403, and 204 responses
+
+let posts = [
+  { id: 1, title: "My Post",     userId: 10 },
+  { id: 2, title: "Other Post",  userId: 99 }
+];
+
+`,
+  endpoints:[
+    {m:'GET',p:'/api/posts/1',d:'Check post exists first',auth:false},
+    {m:'DELETE',p:'/api/posts/1',d:'Delete (needs auth)',auth:true},
+  ],
+  test(code){
+    try{
+      const fn=new Function('console',code+'\nreturn typeof deletePost!=="undefined"?deletePost:null;');
+      const h=fn({log:()=>{}});
+      let st404=0;
+      if(h)h({params:{id:'99'},user:{id:10}},{status(c){st404=c;return this;},json:()=>{}});
+      let st403=0;
+      if(h)h({params:{id:'2'},user:{id:10}},{status(c){st403=c;return this;},json:()=>{}});
+      let st204=0,sentEmpty=false;
+      if(h)h({params:{id:'1'},user:{id:10}},{status(c){st204=c;return this;},json:()=>{},send(){sentEmpty=true;}});
+      return{results:[
+        {pass:typeof h==='function',msg:'Function `deletePost` is defined'},
+        {pass:st404===404,msg:'Returns 404 for non-existent post'},
+        {pass:st403===403,msg:'Returns 403 when user does not own the post'},
+        {pass:st204===204,msg:'Returns 204 on successful delete'},
+        {pass:sentEmpty,msg:'Calls res.send() with no body (204)'},
+      ],logs:[]}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs:[]}}
+  }
+},
+{
+  title:"Writing Middleware", section:"Middleware & Auth", num:9,
+  body:`Middleware is a function with signature <code>(req, res, next)</code>.
+<ul>
+<li>It runs <strong>between</strong> request arrival and route handler</li>
+<li>Must call <code>next()</code> to pass control forward</li>
+<li>Can <strong>attach data</strong> to <code>req</code> for downstream handlers</li>
+<li>Can <strong>short-circuit</strong> (respond early, e.g. on auth failure)</li>
+</ul>
+The real server has <code>requestLogger</code>, <code>authenticate</code>, <code>requireRole</code>, and rate-limiting middleware all chained together.`,
+  task:`Write two middleware functions: <code>requestLogger(req,res,next)</code> that logs <code>[METHOD] /path</code> then calls next(), and <code>addTimestamp(req,res,next)</code> that sets <code>req.timestamp = new Date().toISOString()</code> then calls next(). Test both.`,
+  hint:`<code>function requestLogger(req,res,next){<br>&nbsp;&nbsp;console.log("["+req.method+"] "+req.path);<br>&nbsp;&nbsp;next();<br>}<br>function addTimestamp(req,res,next){<br>&nbsp;&nbsp;req.timestamp=new Date().toISOString();<br>&nbsp;&nbsp;next();<br>}<br>const req={method:"GET",path:"/api/posts"};<br>let n1=false,n2=false;<br>requestLogger(req,{},()=>{n1=true;console.log("logger next() called");});<br>addTimestamp(req,{},()=>{n2=true;console.log("timestamp:",req.timestamp);});</code>`,
+  starter:`// Middleware: (req, res, next) => { ...do stuff... next(); }
+// TASK: Write requestLogger and addTimestamp middleware
+
+`,
+  endpoints:[{m:'GET',p:'/api/posts',d:'Watch the server logs in Docker',auth:false}],
+  test(code){
+    try{
+      const logs=[];
+      const fn=new Function('console',code+'\nreturn{requestLogger:typeof requestLogger!=="undefined"?requestLogger:null,addTimestamp:typeof addTimestamp!=="undefined"?addTimestamp:null}');
+      const{requestLogger:rl,addTimestamp:at}=fn({log:(...a)=>logs.push(a.join(' '))});
+      let n1=false,n2=false;
+      const req={method:'POST',path:'/api/users'};
+      if(rl)rl(req,{},()=>{n1=true;});
+      if(at)at(req,{},()=>{n2=true;});
+      return{results:[
+        {pass:typeof rl==='function',msg:'`requestLogger` function is defined'},
+        {pass:typeof at==='function',msg:'`addTimestamp` function is defined'},
+        {pass:n1,msg:'requestLogger calls next()'},
+        {pass:n2,msg:'addTimestamp calls next()'},
+        {pass:logs.some(l=>l.includes('POST')),msg:'requestLogger logs the HTTP method'},
+        {pass:req.timestamp&&typeof req.timestamp==='string',msg:'addTimestamp sets req.timestamp'},
+      ],logs}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs:[]}}
+  }
+},
+{
+  title:"Auth with JWT", section:"Middleware & Auth", num:10,
+  body:`<strong>JWT (JSON Web Token)</strong> flow:
+<ol style="padding-left:16px;margin:8px 0">
+<li>User logs in → server checks password → creates signed token</li>
+<li>Client stores token, sends it in <code>Authorization: Bearer &lt;token&gt;</code></li>
+<li>Server middleware verifies the signature on every protected request</li>
+</ol>
+Use the API explorer to <strong>actually login</strong> with the real server and get a real JWT token! Then use it to call protected routes.
+<br><br>Credentials: <code>alice@example.com</code> / <code>password</code>`,
+  task:`Write an <code>authenticate</code> middleware. Extract token from <code>req.headers.authorization</code> ("Bearer TOKEN"). If missing → 401. If token is <code>"valid-token"</code>, set <code>req.user = { id: 1, role: "admin" }</code> and call next(). Otherwise → 401.`,
+  hint:`<code>function authenticate(req,res,next){<br>&nbsp;&nbsp;const auth=req.headers.authorization;<br>&nbsp;&nbsp;if(!auth||!auth.startsWith('Bearer ')) return res.status(401).json({error:"No token"});<br>&nbsp;&nbsp;const token=auth.split(' ')[1];<br>&nbsp;&nbsp;if(token!=='valid-token') return res.status(401).json({error:"Invalid token"});<br>&nbsp;&nbsp;req.user={id:1,role:'admin'};<br>&nbsp;&nbsp;next();<br>}</code>`,
+  starter:`// JWT auth middleware - guards protected routes
+// TASK: Write authenticate middleware
+
+// In real code: jwt.verify(token, process.env.JWT_SECRET)
+// Here, accept token === "valid-token" to simulate
+
+`,
+  endpoints:[
+    {m:'POST',p:'/api/auth/login',d:'Login → get real JWT',auth:false},
+    {m:'GET',p:'/api/auth/me',d:'Protected: who am I?',auth:true},
+  ],
+  test(code){
+    try{
+      const fn=new Function('console',code+'\nreturn typeof authenticate!=="undefined"?authenticate:null;');
+      const h=fn({log:()=>{}});
+      let st1=0;
+      if(h)h({headers:{}},{status(c){st1=c;return this;},json:()=>{}},()=>{});
+      let st2=0;
+      if(h)h({headers:{authorization:'Bearer wrong'}},{status(c){st2=c;return this;},json:()=>{}},()=>{});
+      let n3=false;const req3={headers:{authorization:'Bearer valid-token'}};
+      if(h)h(req3,{status(c){return this;},json:()=>{}},()=>{n3=true;});
+      return{results:[
+        {pass:typeof h==='function',msg:'`authenticate` function is defined'},
+        {pass:st1===401,msg:'Returns 401 when no Authorization header'},
+        {pass:st2===401,msg:'Returns 401 for invalid token'},
+        {pass:n3,msg:'Calls next() for valid token'},
+        {pass:req3.user&&req3.user.id===1,msg:'Sets req.user on valid token'},
+        {pass:req3.user&&req3.user.role==='admin',msg:'req.user has role property'},
+      ],logs:[]}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs:[]}}
+  }
+},
+{
+  title:"Redis Caching", section:"Middleware & Auth", num:11,
+  body:`<strong>Redis</strong> is an in-memory key-value store. It's blazing fast because everything lives in RAM.
+
+Caching pattern:
+<ol style="padding-left:16px;margin:8px 0">
+<li>Check Redis for cached result</li>
+<li>If found → return it immediately (skip DB)</li>
+<li>If not found → query DB, store in Redis with TTL, return result</li>
+</ol>
+The real API caches <code>/api/posts</code> for 20 seconds and <code>/api/users/:id</code> for 60 seconds. Hit the same endpoint twice — the second response says <code>"source": "cache"</code>!`,
+  task:`Write a <code>withCache(key, ttl, fetchFn)</code> function. It takes a cache key, TTL (seconds), and async function to fetch data. First check <code>fakeRedis[key]</code>. If found, return it with <code>{data, source:'cache'}</code>. Otherwise call <code>fetchFn()</code>, store in <code>fakeRedis</code>, return with <code>source:'db'</code>.`,
+  hint:`<code>const fakeRedis={};<br>async function withCache(key,ttl,fetchFn){<br>&nbsp;&nbsp;if(fakeRedis[key]) return{data:fakeRedis[key],source:'cache'};<br>&nbsp;&nbsp;const data=await fetchFn();<br>&nbsp;&nbsp;fakeRedis[key]=data;<br>&nbsp;&nbsp;return{data,source:'db'};<br>}<br>// Test it:<br>(async()=>{<br>&nbsp;&nbsp;const r1=await withCache('users',60,()=>['Alice','Bob']);<br>&nbsp;&nbsp;const r2=await withCache('users',60,()=>['Alice','Bob']);<br>&nbsp;&nbsp;console.log(r1.source); // db<br>&nbsp;&nbsp;console.log(r2.source); // cache<br>})();</code>`,
+  starter:`// Redis caching: check cache first, fallback to DB
+// TASK: Write withCache(key, ttl, fetchFn) function
+
+const fakeRedis = {};  // simulates Redis in-memory store
+
+`,
+  endpoints:[
+    {m:'GET',p:'/api/posts',d:'1st call: source=db',auth:false},
+    {m:'GET',p:'/api/posts',d:'2nd call: source=cache',auth:false},
+  ],
+  test(code){
+    try{
+      const logs=[];
+      const fn=new Function('console',code+'\nreturn typeof withCache!=="undefined"?withCache:null;');
+      const h=fn({log:(...a)=>logs.push(a.join(' '))});
+      if(typeof h!=='function') return{results:[{pass:false,msg:'withCache is not defined'}],logs};
+      let fetchCount=0;
+      const p=h('mykey',60,()=>{fetchCount++;return Promise.resolve([1,2,3]);}).then(r1=>{
+        return h('mykey',60,()=>{fetchCount++;return Promise.resolve([1,2,3]);}).then(r2=>({r1,r2,fetchCount}));
+      });
+      return p.then(({r1,r2,fetchCount})=>({results:[
+        {pass:typeof h==='function',msg:'`withCache` function is defined'},
+        {pass:r1&&r1.source==='db',msg:'First call returns source: "db"'},
+        {pass:r2&&r2.source==='cache',msg:'Second call returns source: "cache"'},
+        {pass:Array.isArray(r1&&r1.data),msg:'Returns data array'},
+        {pass:fetchCount===1,msg:'fetchFn only called once (cache hit on 2nd call)'},
+      ],logs}));
+    }catch(e){return Promise.resolve({results:[{pass:false,msg:'Error: '+e.message}],logs:[]})}
+  }
+},
+{
+  title:"Error Handling", section:"Middleware & Auth", num:12,
+  body:`Production APIs need <strong>consistent, clean error responses</strong>.
+
+Pattern:
+<ul>
+<li>Create <code>class ApiError extends Error</code> with a <code>statusCode</code></li>
+<li>In route handlers, <code>throw new ApiError(404, "Not found")</code></li>
+<li>Global handler (<code>4 params!</code>) catches everything and formats it</li>
+<li><strong>Never expose</strong> stack traces or DB errors to the client</li>
+</ul>
+The real server uses exactly this pattern — all errors flow through one handler.`,
+  task:`Create <code>class ApiError extends Error</code> with constructor <code>(statusCode, message)</code>. Write <code>errorHandler(err, req, res, next)</code> that responds with <code>err.statusCode || 500</code> and <code>{ error: err.message }</code>. Test with a 404 error.`,
+  hint:`<code>class ApiError extends Error{<br>&nbsp;&nbsp;constructor(statusCode,message){super(message);this.statusCode=statusCode;}<br>}<br>function errorHandler(err,req,res,next){<br>&nbsp;&nbsp;res.status(err.statusCode||500).json({error:err.message});<br>}<br>const e=new ApiError(404,"Post not found");<br>errorHandler(e,{},{status(c){console.log("Status:",c);return this;},json:d=>console.log(JSON.stringify(d))},()=>{});</code>`,
+  starter:`// Global error handler: consistent API error responses
+// TASK: Create ApiError class and errorHandler middleware
+
+`,
+  endpoints:[
+    {m:'GET',p:'/api/posts/9999',d:'See a real 404 error response',auth:false},
+    {m:'GET',p:'/api/users/1',d:'See a real 403 (need auth)',auth:false},
+  ],
+  test(code){
+    try{
+      const logs=[];
+      const fn=new Function('console',code+'\nreturn{ApiError:typeof ApiError!=="undefined"?ApiError:null,errorHandler:typeof errorHandler!=="undefined"?errorHandler:null}');
+      const{ApiError:AE,errorHandler:eh}=fn({log:(...a)=>logs.push(a.join(' '))});
+      let st=0,body;
+      if(eh&&AE)eh(new AE(404,'Not found'),{},{status(c){st=c;return this;},json(d){body=d;}},()=>{});
+      let st2=0;
+      if(eh&&AE)eh(new Error('Oops'),{},{status(c){st2=c;return this;},json:()=>{}},()=>{});
+      return{results:[
+        {pass:!!AE,msg:'`ApiError` class is defined'},
+        {pass:!!eh,msg:'`errorHandler` function is defined'},
+        {pass:!!AE&&new AE(422,'x') instanceof Error,msg:'ApiError extends Error'},
+        {pass:!!AE&&new AE(422,'test').statusCode===422,msg:'ApiError sets .statusCode'},
+        {pass:st===404,msg:'errorHandler uses err.statusCode (404)'},
+        {pass:body&&body.error==='Not found',msg:'Response body: { error: err.message }'},
+        {pass:st2===500,msg:'Defaults to 500 for plain Error'},
+      ],logs}
+    }catch(e){return{results:[{pass:false,msg:'Error: '+e.message}],logs:[]}}
+  }
+},
+];
+
+// ── STATE ──────────────────────────────────────────────────────────────────────
+let isLoginMode = true;
+let jwtToken = localStorage.getItem('bec_token') || '';
+
+// ── AUTH ───────────────────────────────────────────────────────────────────────
+function openModal(){ document.getElementById('authModal').classList.add('show'); }
+function closeModal(){ document.getElementById('authModal').classList.remove('show'); }
+function toggleAuthMode(){
+  isLoginMode=!isLoginMode;
+  document.getElementById('modalTitle').textContent=isLoginMode?'Login':'Register';
+  document.getElementById('modalSub').textContent=isLoginMode?'Sign in to save progress':'Create a free account';
+  document.getElementById('authName').style.display=isLoginMode?'none':'block';
+  document.querySelector('#authModal .mbtn.primary').textContent=isLoginMode?'Login':'Register';
+  document.querySelector('#authModal .mbtn.secondary').textContent=isLoginMode?'Register instead':'Login instead';
+}
+
+async function submitAuth(){
+  const email=document.getElementById('authEmail').value;
+  const pass=document.getElementById('authPass').value;
+  const name=document.getElementById('authName').value;
+  const errEl=document.getElementById('authErr');
+  errEl.classList.remove('show');
+  try{
+    const body=isLoginMode?{email,password:pass}:{name,email,password:pass};
+    const r=await fetch(API+(isLoginMode?'/auth/login':'/auth/register'),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const data=await r.json();
+    if(!r.ok){errEl.textContent=data.error||'Request failed';errEl.classList.add('show');return;}
+    jwtToken=data.token;
+    localStorage.setItem('bec_token',jwtToken);
+    currentUser=data.user;
+    document.getElementById('authToggle').textContent='👤 '+data.user.name;
+    document.getElementById('authToggle').classList.add('logout');
+    document.getElementById('authToggle').onclick=logout;
+    closeModal();
+    syncProgress();
+    addOut('pass','✓ Logged in as '+data.user.name+'. Progress will be saved!');
+  }catch(e){errEl.textContent='Connection error — is Docker running?';errEl.classList.add('show');}
+}
+
+function logout(){
+  jwtToken='';localStorage.removeItem('bec_token');currentUser=null;
+  document.getElementById('authToggle').textContent='Login / Register';
+  document.getElementById('authToggle').classList.remove('logout');
+  document.getElementById('authToggle').onclick=openModal;
+}
+
+// ── SERVER HEALTH ──────────────────────────────────────────────────────────────
+async function checkHealth(){
+  const el=document.getElementById('serverStatus');
+  el.textContent='⬤ Checking...';
+  try{
+    const r=await fetch('/health',{signal:AbortSignal.timeout(3000)});
+    const d=await r.json();
+    if(d.status==='ok'){
+      el.textContent='⬤ Server Online';el.className='server-status status-ok';
+    }else{el.textContent='⬤ DB Error';el.className='server-status status-err';}
+  }catch{el.textContent='⬤ Server Offline';el.className='server-status status-err';}
+}
+
+// ── PROGRESS SYNC ──────────────────────────────────────────────────────────────
+async function syncProgress(){
+  if(!jwtToken) return;
+  try{
+    const r=await fetch(API+'/progress',{headers:{Authorization:'Bearer '+jwtToken}});
+    if(!r.ok) return;
+    const d=await r.json();
+    d.progress.filter(p=>p.passed).forEach(p=>completed.add(p.lesson_id-1));
+    saveProgress();renderSidebar();updateProgressBar();
+  }catch{}
+}
+
+async function markLessonDone(lessonIdx){
+  completed.add(lessonIdx);saveProgress();
+  renderSidebar();updateProgressBar();
+  if(jwtToken){
+    try{await fetch(API+'/progress/'+(lessonIdx+1),{method:'POST',headers:{Authorization:'Bearer '+jwtToken}});}catch{}
+  }
+}
+
+function saveProgress(){localStorage.setItem('bec_done',JSON.stringify([...completed]));}
+function updateProgressBar(){
+  const pct=Math.round(completed.size/lessons.length*100);
+  document.getElementById('progFill').style.width=pct+'%';
+  document.getElementById('progText').textContent=completed.size+'/'+lessons.length;
+}
+
+// ── SIDEBAR ────────────────────────────────────────────────────────────────────
+function renderSidebar(){
+  const sb=document.getElementById('sidebar');
+  let section='';let html='';
+  lessons.forEach((l,i)=>{
+    if(l.section!==section){
+      section=l.section;
+      html+=`<div class="sec-title">${section}</div>`;
+    }
+    const done=completed.has(i);
+    const active=i===currentLesson;
+    html+=`<div class="lesson-row${active?' active':''}${done?' done':''}" id="nav-${i}" onclick="loadLesson(${i})">
+      <div class="ldot"></div><span class="lnum">${l.num}</span>${l.title}
+    </div>`;
+  });
+  sb.innerHTML=html;
+}
+
+// ── LOAD LESSON ────────────────────────────────────────────────────────────────
+function loadLesson(idx){
+  currentLesson=idx;
+  const L=lessons[idx];
+  renderSidebar();
+
+  // Build endpoints list
+  let epHtml='';
+  if(L.endpoints&&L.endpoints.length){
+    epHtml=`<div class="api-explorer">
+      <div class="api-ex-title">⚡ Live API Endpoints — click to test</div>
+      <div class="api-ex-body">
+      ${L.endpoints.map(ep=>`
+        <div class="endpoint-row" onclick="callEndpoint('${ep.m}','${ep.p}',${ep.auth})">
+          <span class="method-tag ${ep.m}">${ep.m}</span>
+          <span class="ep-path">${ep.p}</span>
+          <span class="ep-desc">${ep.d}</span>
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('instrPanel').innerHTML=`
+    <span class="lesson-badge">Lesson ${L.num} / ${lessons.length} · ${L.section}</span>
+    <div class="lesson-title">${L.title}</div>
+    <div class="lesson-body">${L.body}</div>
+    <div class="task-box"><strong>📋 Your Task</strong>${L.task}</div>
+    ${epHtml}
+    <button class="hint-btn" onclick="toggleHint()">💡 Show Hint</button>
+    <div class="hint-box" id="hintBox">${L.hint}</div>
+  `;
+
+  document.getElementById('codeTA').value=L.starter;
+  updateLineNums();
+  clearOutput();
+}
+
+function toggleHint(){
+  const h=document.getElementById('hintBox');
+  h.classList.toggle('show');
+  document.querySelector('.hint-btn').textContent=h.classList.contains('show')?'🙈 Hide Hint':'💡 Show Hint';
+}
+
+// ── LIVE API EXPLORER ──────────────────────────────────────────────────────────
+async function callEndpoint(method, path, needsAuth){
+  clearOutput();
+  addOut('info','→ '+method+' '+path+(needsAuth?' (with auth token)':''));
+  if(needsAuth&&!jwtToken){addOut('warn','⚠ This endpoint needs auth. Login first!');return;}
+  try{
+    const opts={method,headers:{'Content-Type':'application/json'}};
+    if(needsAuth&&jwtToken) opts.headers['Authorization']='Bearer '+jwtToken;
+    if(method==='POST'&&path==='/api/posts'){
+      opts.body=JSON.stringify({title:'Test Post from Course',body:'Created from the BackEndCamp API explorer!'});
+      addOut('log','  body: '+opts.body);
+    }
+    if(method==='POST'&&path==='/api/auth/login'){
+      opts.body=JSON.stringify({email:'alice@example.com',password:'password'});
+      addOut('log','  body: '+opts.body);
+    }
+    const r=await fetch(path,opts);
+    const ct=r.headers.get('content-type')||'';
+    addOut('info','← '+r.status+' '+r.statusText);
+    if(ct.includes('json')){
+      const d=await r.json();
+      if(d.token){jwtToken=d.token;localStorage.setItem('bec_token',jwtToken);addOut('pass','  ✓ Token saved! Protected routes now unlocked.');}
+      addOut('res',JSON.stringify(d,null,2));
+    }else{addOut('log','  (no body)');}
+  }catch(e){addOut('fail','✗ Error: '+e.message+'\n  Is Docker running? Run: docker compose up');}
+}
+
+function openApiExplorer(){
+  const L=lessons[currentLesson];
+  if(L.endpoints&&L.endpoints.length){
+    callEndpoint(L.endpoints[0].m,L.endpoints[0].p,L.endpoints[0].auth);
+  }else{checkHealth();}
+}
+
+// ── RUN CODE ───────────────────────────────────────────────────────────────────
+async function runCode(){
+  const code=document.getElementById('codeTA').value;
+  const L=lessons[currentLesson];
+  clearOutput();
+  addOut('info','── Running tests ──');
+
+  let res;
+  try{ res=await Promise.resolve(L.test(code)); }
+  catch(e){ res={results:[{pass:false,msg:'Unexpected error: '+e.message}],logs:[]}; }
+
+  if(res.logs&&res.logs.length){
+    addOut('info','── Console Output ──');
+    res.logs.forEach(l=>addOut('log',String(l)));
+    addOut('log','');
+  }
+  addOut('info','── Test Results ──');
+  res.results.forEach(r=>addOut(r.pass?'pass':'fail',(r.pass?'✓ ':'✗ ')+r.msg));
+
+  const pass=res.results.filter(r=>r.pass).length;
+  const total=res.results.length;
+  const allPass=pass===total;
+  addOut('log','');
+  addOut(allPass?'pass':'fail',allPass?`🎉 All ${total} tests passed!`:`${pass}/${total} tests passing`);
+
+  document.getElementById('testCount').textContent=pass+'/'+total;
+  const badge=document.getElementById('sBadge');
+  badge.textContent=allPass?'✓ PASSED':pass+'/'+total+' Passing';
+  badge.className='sbadge '+(allPass?'pass':'fail');
+
+  const btnNext=document.getElementById('btnNext');
+  if(allPass){
+    btnNext.style.display='block';
+    markLessonDone(currentLesson);
+  }else{btnNext.style.display='none';}
+}
+
+function resetCode(){
+  document.getElementById('codeTA').value=lessons[currentLesson].starter;
+  updateLineNums();clearOutput();
+  document.getElementById('sBadge').className='sbadge';
+  document.getElementById('btnNext').style.display='none';
+}
+
+function nextLesson(){
+  if(currentLesson<lessons.length-1)loadLesson(currentLesson+1);
+}
+
+// ── OUTPUT HELPERS ─────────────────────────────────────────────────────────────
+function clearOutput(){
+  document.getElementById('outBody').innerHTML='';
+  document.getElementById('sBadge').className='sbadge';
+  document.getElementById('btnNext').style.display='none';
+  document.getElementById('testCount').textContent='';
+}
+
+function addOut(cls,text){
+  const el=document.createElement('div');
+  el.className='ol '+cls;
+  el.textContent=text;
+  document.getElementById('outBody').appendChild(el);
+  el.scrollIntoView({block:'end'});
+}
+
+// ── LINE NUMBERS ───────────────────────────────────────────────────────────────
+function updateLineNums(){
+  const ta=document.getElementById('codeTA');
+  const n=ta.value.split('\n').length;
+  document.getElementById('lineNums').innerHTML=Array.from({length:n},(_,i)=>i+1).join('<br>');
+}
+
+document.getElementById('codeTA').addEventListener('input',updateLineNums);
+document.getElementById('codeTA').addEventListener('scroll',function(){
+  document.getElementById('lineNums').scrollTop=this.scrollTop;
+});
+document.getElementById('codeTA').addEventListener('keydown',function(e){
+  if(e.key==='Tab'){e.preventDefault();const s=this.selectionStart;this.value=this.value.substring(0,s)+'  '+this.value.substring(this.selectionEnd);this.selectionStart=this.selectionEnd=s+2;updateLineNums();}
+});
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+renderSidebar();
+loadLesson(0);
+updateProgressBar();
+checkHealth();
+if(jwtToken) syncProgress();
+// Check health every 30s
+setInterval(checkHealth, 30000);
+</script>
+</body>
+</html>
