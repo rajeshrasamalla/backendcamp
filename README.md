@@ -1,172 +1,119 @@
 # 🚀 BackEndCamp — Interactive Back-End Development Course
 
-A fully self-hosted, freeCodeCamp-style interactive learning platform built with:
-- **Node.js + Express** (real API server)
-- **PostgreSQL** (real relational database)
-- **Redis** (real caching layer)
-- **Nginx** (reverse proxy + static frontend)
-- **Docker Compose** (orchestrates everything)
+> A self-hosted, freeCodeCamp-style interactive learning platform  
+> built with a **real production stack** — not simulated in the browser.
+
+![Node.js](https://img.shields.io/badge/Node.js-20-green?logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express-4-lightgrey?logo=express)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue?logo=postgresql&logoColor=white)
+![Redis](https://img.shields.io/badge/Redis-7-red?logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
+![Nginx](https://img.shields.io/badge/Nginx-Reverse%20Proxy-009639?logo=nginx&logoColor=white)
+
+![BackEndCamp Preview](preview.png)
 
 ---
 
-## ⚡ Quick Start (3 commands)
+## 🎯 What Is This?
 
-```bash
-# 1. Go into the project folder
-cd backendcamp
-
-# 2. Start everything
-docker compose up
-
-# 3. Open your browser
-open http://localhost:3000
-```
-
-That's it. All 4 containers spin up automatically.
+An interactive coding course that runs entirely on your machine using Docker.  
+Every lesson has a **live code editor**, **real test runner**, and **live API explorer**  
+that calls an actual Express server — not a simulation.
 
 ---
 
 ## 🏗️ Architecture
-
 ```
-Your Browser (localhost:3000)
+Browser (localhost:3000)
         │
         ▼
-  ┌─────────────┐
-  │    Nginx    │  :80 inside Docker → :3000 on your machine
-  │  (frontend) │  serves index.html
-  └──────┬──────┘
-         │ /api/* proxied to →
-         ▼
-  ┌─────────────┐
-  │   Express   │  :4000 inside Docker
-  │     API     │  JWT auth, rate limiting, validation
-  └──────┬──────┘
-         │
-    ┌────┴────┐
-    ▼         ▼
-┌───────┐  ┌───────┐
-│  PG   │  │ Redis │
-│  :5432│  │  :6379│
-└───────┘  └───────┘
+   ┌─────────┐
+   │  Nginx  │  serves frontend + proxies /api/*
+   └────┬────┘
+        ▼
+   ┌─────────┐
+   │ Express │  JWT auth · rate limiting · validation
+   └────┬────┘
+        │
+   ┌────┴────┐
+   ▼         ▼
+┌──────┐  ┌───────┐
+│  PG  │  │ Redis │
+└──────┘  └───────┘
 ```
 
 ---
 
-## 📚 What's Included
+## 📚 12 Interactive Lessons
 
-### 12 Interactive Lessons
-| # | Lesson | Concept |
-|---|--------|---------|
-| 1 | What is Node.js? | Variables, console.log |
+| # | Lesson | Concepts |
+|---|--------|----------|
+| 1 | What is Node.js? | Variables, console, runtime |
 | 2 | Objects & JSON | JSON.stringify, data structures |
 | 3 | HTTP Methods | GET, POST, PATCH, DELETE |
 | 4 | Your First Express Route | app.get(), req, res |
 | 5 | Route Parameters | req.params, req.query |
-| 6 | GET – Read Resources | Pagination, cache headers |
+| 6 | GET – Read Resources | Pagination, Redis caching |
 | 7 | POST – Create Resources | req.body, validation, 201 |
-| 8 | DELETE a Resource | 404, 403, 204 |
+| 8 | DELETE a Resource | 404, 403, 204 ownership checks |
 | 9 | Writing Middleware | next(), req augmentation |
 | 10 | Auth with JWT | Bearer tokens, authentication |
 | 11 | Redis Caching | Cache-aside pattern |
 | 12 | Error Handling | ApiError class, global handler |
 
-### Real API Endpoints
-```
-POST   /api/auth/register   Create account
-POST   /api/auth/login      Login → get JWT
-GET    /api/auth/me         Who am I? (auth)
-
-GET    /api/users           List users (admin)
-GET    /api/users/:id       Get user (auth)
-PATCH  /api/users/:id       Update name (auth)
-DELETE /api/users/:id       Delete user (admin)
-
-GET    /api/posts           List posts (paginated, cached)
-GET    /api/posts/:id       Get post
-POST   /api/posts           Create post (auth)
-PATCH  /api/posts/:id       Update post (auth + ownership)
-DELETE /api/posts/:id       Delete post (auth + ownership)
-
-GET    /api/progress        My lesson progress (auth)
-POST   /api/progress/:id    Mark lesson complete (auth)
-
-GET    /health              Health check
-```
-
-### Seed Accounts (all have password: `password`)
-| Email | Role |
-|-------|------|
-| alice@example.com | admin |
-| bob@example.com | user |
-| carol@example.com | user |
-
 ---
 
-## 🔧 Useful Commands
-
+## ⚡ Quick Start
 ```bash
-# Start in background
-docker compose up -d
-
-# See logs
-docker compose logs -f api
-docker compose logs -f postgres
-
-# Stop everything
-docker compose down
-
-# Wipe database and start fresh
-docker compose down -v
+git clone https://github.com/rajeshrasamalla/backendcamp.git
+cd backendcamp
 docker compose up
-
-# Open a shell in the API container
-docker exec -it backendcamp_api sh
-
-# Connect to PostgreSQL directly
-docker exec -it backendcamp_db psql -U admin -d backendcamp
-
-# Connect to Redis CLI
-docker exec -it backendcamp_redis redis-cli
 ```
+
+Open **http://localhost:3000** — that's it.
+
+> **Requirements:** Docker Desktop only. Nothing else to install.
 
 ---
 
-## 🛠️ Project Structure
+## 🔑 Test Credentials
 
+| Email | Password | Role |
+|-------|----------|------|
+| alice@example.com | password | admin |
+| bob@example.com | password | user |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Runtime | Node.js 20 |
+| Framework | Express.js 4 |
+| Database | PostgreSQL 16 |
+| Cache | Redis 7 |
+| Auth | JWT + bcrypt |
+| Proxy | Nginx |
+| Container | Docker Compose |
+
+---
+
+## 📁 Project Structure
 ```
 backendcamp/
-├── docker-compose.yml          ← orchestrates all services
-├── frontend/
-│   └── index.html              ← the entire course UI
-├── nginx/
-│   └── nginx.conf              ← reverse proxy config
+├── docker-compose.yml
+├── frontend/index.html        ← entire course UI
+├── nginx/nginx.conf           ← reverse proxy
 └── backend/
-    ├── Dockerfile
-    ├── package.json
-    ├── db/
-    │   └── init.sql            ← creates tables + seed data
-    └── src/
-        ├── server.js           ← Express entry point
-        ├── db/
-        │   └── client.js       ← PostgreSQL + Redis clients
-        ├── middleware/
-        │   ├── logger.js       ← requestLogger + authenticate + requireRole
-        │   └── errorHandler.js ← ApiError class + global handler
-        └── routes/
-            ├── auth.js         ← /api/auth/*
-            ├── users.js        ← /api/users/*
-            ├── posts.js        ← /api/posts/*
-            └── progress.js     ← /api/progress/*
+    ├── src/
+    │   ├── server.js
+    │   ├── routes/            ← auth, users, posts, progress
+    │   ├── middleware/        ← JWT auth, logger, error handler
+    │   └── db/                ← PostgreSQL + Redis clients
+    └── db/init.sql            ← schema + seed data
 ```
 
 ---
 
-## 💡 Learning Features
-
-- **Live code editor** with line numbers and Tab support
-- **Real test runner** that executes your JS and checks results
-- **Live API explorer** — click any endpoint to call the real server
-- **Progress saved** — login to persist progress in PostgreSQL
-- **Redis caching demo** — call the same endpoint twice, see `"source": "cache"`
-- **Hot reload** — edit backend files, the server restarts automatically (nodemon)
+*Built as a hands-on learning project to understand full-stack back-end development.*
