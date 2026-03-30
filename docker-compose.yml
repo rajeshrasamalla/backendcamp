@@ -1,84 +1,45 @@
-version: "3.9"
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  ACCELQ_URL: 'https://app.accelq.io/'
+  ACCELQ_USERNAME: 'rajesh.rasamalla@accelq.com'
+  ACCELQ_TENANT: 'aqsupport'
+  ACCELQ_JOB_ID: '8815'
+
+steps:
+
+# ── Install Docker Compose (if needed) ──
+- script: |
+    docker --version
+    docker compose version || docker-compose version
+  displayName: 'Check Docker Installation'
+
+# ── Start Application using Docker Compose ──
+- script: |
+    docker compose -f docker-compose.yml up -d
+  displayName: 'Start Application Stack'
+
+# ── Wait for Services to be Ready ──
+- script: |
+    echo "Waiting for services to start..."
+    sleep 30
+  displayName: 'Wait for Services'
+
+# ── Run ACCELQ Test Job ──
 - task: aqciconnect@2
   inputs:
     appURL: 'https://app.accelq.io/'
     userName: 'rajesh.rasamalla@accelq.com'
-    apiKey: 'NDKEuxJ0BGmnyp-QGNJNFkcoMpDbZWGLcKHK93JVawoaq'
+    apiKey: 'NDKEuxJ0BGmnyp-QGNJNFkcoMpDbZWGLcKHK93JVawoaq'   # Store in Pipeline Secrets
     tenantCode: 'aqsupport'
     jobId: '8815'
 
-services:
-
-  # ── PostgreSQL Database ──────────────────────────────────────
-  postgres:
-    image: postgres:16-alpine
-    container_name: backendcamp_db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: backendcamp
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: secret123
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./backend/db/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d backendcamp"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-  # ── Redis Cache ──────────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: backendcamp_redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-
-  # ── Node.js / Express API ────────────────────────────────────
-  api:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: backendcamp_api
-    restart: unless-stopped
-    environment:
-      NODE_ENV: development
-      PORT: 4000
-      DATABASE_URL: postgresql://admin:secret123@postgres:5432/backendcamp
-      REDIS_URL: redis://redis:6379
-      JWT_SECRET: super-secret-jwt-key-change-in-production
-    volumes:
-      - ./backend:/app
-      - /app/node_modules          # keep container's node_modules
-    ports:
-      - "4000:4000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    command: npm run dev
-
-  # ── Frontend (static course UI) ──────────────────────────────
-  frontend:
-    image: nginx:alpine
-    container_name: backendcamp_frontend
-    restart: unless-stopped
-    volumes:
-      - ./frontend:/usr/share/nginx/html:ro
-      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    ports:
-      - "3000:80"
-    depends_on:
-      - api
-
-volumes:
-  postgres_data:
+# ── Stop Containers (Cleanup) ──
+- script: |
+    docker compose down
+  displayName: 'Stop Application Stack'
+  condition: always()
