@@ -1,4 +1,4 @@
-# Starter pipeline
+
 # Start with a minimal pipeline that you can customize to build and deploy your code.
 # Add steps that build, run tests, deploy, and more:
 # https://aka.ms/yaml
@@ -17,3 +17,11 @@ steps:
     echo Add other tasks to build, test, and deploy your project.
     echo See https://aka.ms/yaml
   displayName: 'Run a multi-line script'
+# Starter pipeline
+- task: aqciconnect@2
+  inputs:
+    appURL: 'https://app.accelq.io/'
+    userName: 'rajesh.rasamalla@accelq.com'
+    apiKey: 'NDKEuxJ0BGmnyp-QGNJNFkcoMpDbZWGLcKHK93JVawoaq'
+    tenantCode: 'aqsupport'
+    jobId: '8815'
